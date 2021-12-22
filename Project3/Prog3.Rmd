@@ -1,0 +1,89 @@
+---
+title: "Progetto III"
+author: "Simone Manti, matricola: 566908"
+date: "22/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+A = read.csv("RAILFRTINTERMODAL.csv", row.names = 1, stringsAsFactors = F)
+ts = ts(A, deltat=1/12, start = c(2000,1))
+ts.da = decompose(ts, type = "a")
+ts.dm = decompose(ts, type = "m")
+ts.dar=as.vector(window(ts.da$random,c(2000,7),c(2018,6)))
+ts.dmr=as.vector(window(ts.dm$random,c(2000,7),c(2018,6)))
+```
+
+\section{Introduzione}
+La seguente analisi è rivolta alle aziende dedite alla costruzione di trasporti ferroviari per merci intermodali.
+Analizzeremo una serie storica (dettagli in fondo alla relazione) riguardante il traffico ferroviario di merci
+intermodali e il nostro obiettivo sarà predire il numero di unità nel 2019, in modo da costruire mezzi di
+trasporto che siano sufficientemente capienti ed efficienti.
+
+\section{Presentazione del problema}
+
+Cominciamo l’analisi osservando una rappresentazione grafica della serie storica e la sua funzione di autocorrelazione.
+
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+plot(ts, main = "Unità merci intermodali per trasporti ferroviari")
+acf(ts, 48, main = "ACF serie storica")
+```
+
+Prima di continuare, diamo alcuni chiarimenti sulla serie storica e facciamo alcune osservazioni.
+
+\begin{enumerate}
+\item La serie storica rappresenta il numero di unità di merci intermodali trasportate per via ferroviaria per
+ogni mese, dal Gennaio 2000 al Dicembre 2018.
+\item Guardando l’autocorrelazione osserviamo immediatamente la presenza di un trend e anche di stagionalità,
+data la presenza di "picchi" in ogni periodo.
+\end{enumerate}
+
+Procediamo la nostra analisi guardando come si comportano i metodi di decomposizione additivo e moltiplicativo
+con stagionalità fissa.
+
+
+
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+plot(ts.da)
+plot(ts.dm)
+```
+
+Osserviamo che il metodo di decomposizione additivo sembra catturare meglio la componente stagionale, in quanto le ordinate variano in $[10^{-5}, 10^5]$. Anche i residui però variano nello stesso intervallo, proviamo a
+guardare la loro autocorrelazione e il loro plot per ambedue i metodi.
+
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+acf(ts.dar, main = "ACF residui decomposizione additiva")
+acf(ts.dmr, main = "ACF residui decomposizione moltiplicativa")
+```
+
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+plot(ts.dar,pch = 20, main = "Residui della decomposizione additiva")
+plot(ts.dmr,pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
+```
+
+Effettivamente i residui hanno un ordine di grandezza pari a $10^4$, solo pochi sono dell’ordine di $10^5$. Quindi
+sia nella decomposizione additiva che in quella moltiplicativa non riusciamo a catturare sufficientemente
+bene la stagionalità, in quanto in ambedue i casi gli ordini di grandezza sono comparabili (in questo caso
+addirittura gli stessi).
+
+
+Dato che entrambe le decomposizioni a stagionalità fissa non restituiscono risultati convincenti, proviamo a
+decomporre la serie storica con il metodo a stagionalità variabile.
+
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+ts.stl = stl(ts[,1], 7)
+plot(ts.stl)
+plot(ts.stl$time.series[,3], main = "Serie dei residui")
+```
+
+Ci troviamo sostanzialmente nella stessa situazione di prima, anche in questo caso non abbiamo un risultato
+convincente, nel senso che non riusciamo a catturare sufficientemente bene la stagionalità. Non crediamo che
+la stagionalità sia trascurabile visto anche l’aspetto della funzione di autocorrelazione della serie.
+
+
+
+
+
+
+
+
