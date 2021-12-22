@@ -12,6 +12,8 @@ ts.da = decompose(ts, type = "a")
 ts.dm = decompose(ts, type = "m")
 ts.dar=as.vector(window(ts.da$random,c(2000,7),c(2018,6)))
 ts.dmr=as.vector(window(ts.dm$random,c(2000,7),c(2018,6)))
+ts.hwa = HoltWinters(ts, seasonal = "a")
+ts.hwm = HoltWinters(ts, seasonal = "m")
 ```
 
 \section{Introduzione}
@@ -37,6 +39,8 @@ ogni mese, dal Gennaio 2000 al Dicembre 2018.
 \item Guardando l’autocorrelazione osserviamo immediatamente la presenza di un trend e anche di stagionalità,
 data la presenza di "picchi" in ogni periodo.
 \end{enumerate}
+
+\section{Decomposizione}
 
 Procediamo la nostra analisi guardando come si comportano i metodi di decomposizione additivo e moltiplicativo
 con stagionalità fissa.
@@ -80,10 +84,31 @@ Ci troviamo sostanzialmente nella stessa situazione di prima, anche in questo ca
 convincente, nel senso che non riusciamo a catturare sufficientemente bene la stagionalità. Non crediamo che
 la stagionalità sia trascurabile visto anche l’aspetto della funzione di autocorrelazione della serie.
 
+\section{Holt Winters}
+Consideriamo adesso il metodo di Holt-Winters e confrontiamo il metodo di HW additivo e il metodo moltiplicativo, per capire quale dei due funziona meglio per la serie storica in esame. Riportiamo in seguito una rappresentazione grafica dei due metodi con coefficienti di default (i.e. i coefficienti ottimali ottenuti minimizzando la varianza dei residui) e i valori di tali coefficienti.
 
+```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
+ts.plot(ts,ts.hwa$fitted[,1],col=c("black","red"), main = "Holt-Winters additivo")
+ts.plot(ts,ts.hwm$fitted[,1],col=c("black","red"), main = "Holt-Winters moltiplicativo")
+```
 
+```{r echo=FALSE}
+C = matrix(nrow = 4, ncol = 3)
+C[,1] = c(" ", "alpha", "beta", "gamma")
+C[1, 2] = "HW Additivo"
+C[1, 3] = "HW Moltiplicativo"
+C[2,2] = ts.hwa$alpha
+C[2,3] = ts.hwm$alpha
+C[3,2] = ts.hwa$beta
+C[3,3] = ts.hwm$beta
+C[4,2] = ts.hwa$gamma
+C[4,3] = ts.hwm$gamma
+knitr::kable(C, format="markdown")
+```
 
-
-
-
-
+Facciamo alcune osservazioni sui coefficienti.
+\begin{itemize}
+\item Il valore di alpha è molto grande per entrambi i metodi (circa 0.6) e quindi ambedue i metodi prediligono la componente innovativa: infatti questo si vede anche dai plot delle due serie generate, entrambe seguono molto la serie originale.
+\item Il valore di beta è molto basso per entrambi i metodi (circa 0.01): questo è molto ragionevole, data la forma che ha il trend, vista nella sezione Decomposizione ("oscilla poco").
+\item Il valore di gamma è molto vicino a 0.5 per entrambi i metodi (più per il metodo moltiplicativo): il massimo sarebbe avere gamma = 0.5 in modo da avere esattamente una via di mezzo tra componente innovativa e conservativa. \textcolor{red}{AGGIUSTARE QUESTE OSSERVAZIONI + CERCARE PARAMETRI MIGLIORI}
+\end{itemize}
