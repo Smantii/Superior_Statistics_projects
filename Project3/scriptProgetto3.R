@@ -38,12 +38,17 @@ ts.hwm = HoltWinters(ts, seasonal = "m")
 ts.plot(ts,ts.hwa$fitted[,1],ts.hwm$fitted[,1],col=c("black","blue","red"))
 
 #guardiamo i coefficienti scelti da HW di default
-print(ts.hwa$alpha)
-print(ts.hwa$beta)
-print(ts.hwa$gamma)
-print(ts.hwm$alpha)
-print(ts.hwm$beta)
-print(ts.hwm$gamma)
+C = matrix(nrow = 4, ncol = 3)
+C[,1] = c(" ", "alpha", "beta", "gamma")
+C[1, 2] = "HW Additivo"
+C[1, 3] = "HW Moltiplicativo"
+C[2,2] = ts.hwa$alpha
+C[2,3] = ts.hwm$alpha
+C[3,2] = ts.hwa$beta
+C[3,3] = ts.hwm$beta
+C[4,2] = ts.hwa$gamma
+C[4,3] = ts.hwm$gamma
+
 
 layout(t(1:2))
 # estrazione dei residui
