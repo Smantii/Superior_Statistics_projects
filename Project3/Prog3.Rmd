@@ -1,9 +1,11 @@
 ---
 title: "Progetto III"
 author: "Simone Manti, matricola: 566908"
-date: "22/12/2021"
+date: "28/12/2021"
 output: pdf_document
 ---
+
+
 
 ```{r setup, include=FALSE}
 A = read.csv("RAILFRTINTERMODAL.csv", row.names = 1, stringsAsFactors = F)
@@ -162,15 +164,17 @@ Ambedue presentano una proporzione di varianza non spiegata molto bassa (leggeri
 Procediamo la nostra analisi dei due metodi di HW confrontando le loro capacità predittive: per farlo valutiamo l'errore nella predizione per 2 anni tramite un procedimento di autovalutazione.   
 
 ```{r echo=FALSE, fig.show='hold', out.height="40%", out.width="40%", fig.align='center'}
-cat("Varianza dell'errore nel metodo additivo (in blu):", sqrt(mean(res.hwa^2)))
-cat("Varianza dell'errore nel metodo moltiplicativo (in verde):", sqrt(mean(res.hwm^2)))
+cat("Varianza dell'errore nel metodo additivo:", sqrt(mean(res.hwa^2)))
+cat("Varianza dell'errore nel metodo moltiplicativo:", sqrt(mean(res.hwm^2)))
 train = window(ts, end = c(2016, 12))
 test = window(ts, start = c(2017,1), end = c(2018,12))
 tscv.hwa.p = predict(HoltWinters(train, seasonal = "a"), 24)
 tscv.hwm.p = predict(HoltWinters(train, seasonal = "m"), 24)
-ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"))
-plot(res.hwa,type="b",pch=20,col="blue", main = "Errore nella predizione (24 mesi)")
-lines(res.hwm,type="b",pch=20,col="green3")
+ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"), main = "Previsione (24 mesi)")
+legend("topleft",legend=c("HW additivo", "HW moltiplicativo"), col=c("red", "blue"), lty=1, cex=0.8)
+plot(res.hwa,type="b",pch=20,col="red", main = "Errore nella previsione (24 mesi)")
+legend("topright",legend=c("HW additivo", "HW moltiplicativo"), col=c("red", "blue"), lty=1, cex=0.8)
+lines(res.hwm,type="b",pch=20,col="blue")
 ```
 
 Possiamo fare alcune osservazioni.
@@ -196,7 +200,7 @@ Riportiamo adesso una rappresentazione grafica dei due metodi e una tabella con 
 
 
 
-```{r echo=FALSE, fig.show='hold', out.height="40%", out.width="40%", fig.align='center'}
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
 ts.plot(ts, ts - ts.ar$resid, col = c("black", "red"), main = "Metodo di Yule Walker")
 ts.plot(ts, ts - ts.ls$resid, col = c("black", "blue"), main = "Metodo dei minimi quadrati")
 C = matrix(nrow = 2, ncol = 15)
@@ -215,23 +219,68 @@ Analizziamo anche in questo caso i residui per ambedue i metodi.
 ```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
 vra =var(ts.ar.r)/var(window(ts,2000))
 vrm =var(ts.ls.r)/var(window(ts,2000))
-cat("Varianza non spiegata YW:", vra)
-cat("Varianza non spiegata OLS:", vrm)
-plot(ts.ar.r, type = "p", pch = 20)
-plot(ts.ls.r, type = "p", pch = 20)
+cat("Varianza non spiegata Yule Walker:", vra)
+cat("Varianza non spiegata Ordinary Least Squares:", vrm)
+plot(ts.ar.r, type = "p", pch = 20, main = "Residui YW")
+plot(ts.ls.r, type = "p", pch = 20, main = "Residui OLS")
 ```
 
 ```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
-pacf(ts.ar.r)
-pacf(ts.ls.r)
+pacf(ts.ar.r, main = "PACF residui YW")
+pacf(ts.ls.r, main = "PACF residui OLS")
 ```
 
+La struttura dei residui per entrambi i metodi sembra molto simile a quella dei metodi HW, anche se la PACF del metodo dei minimi quadrati presenta un picco in corrispondenza del periodo.
+
+Confrontiamo adesso le due capacità predittive tramite un autovalidazione.
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+train = window(ts, end = c(2016, 12))
+test = window(ts, start = c(2017,1), end = c(2018,12))
+tscv.ar.p = predict(ar(train), n.ahead = 24, se.fit = FALSE)
+tscv.ls.p = predict(ar(train, method = "ols"), n.ahead = 24, se.fit = FALSE)
+ts.plot(test, tscv.ar.p, tscv.ls.p, col = c("black", "red", "blue"), main = "Previsione (24 mesi)")
+legend("topleft",legend=c("Yule Walker", "Minimi quadrati"), col=c("red", "blue"), lty=1, cex=0.8)
+
+l=length(ts)
+res.arv=rep(0,24)
+res.lsv=rep(0,24)
+j=1
+for(i in (l-24):(l-1)){
+  ts_cv=ts(ts[1:i],frequency=12,start=c(2000,1))
+  ts.arv=ar(ts_cv)
+  ts.lsv=ar(ts_cv, method = "ols")
+  ts.arv.p=predict(ts.arv,n.ahead = 1, se.fit = FALSE)
+  ts.lsv.p=predict(ts.lsv,n.ahead= 1, se.fit = FALSE)
+  res.arv[j]=ts.arv.p - ts[i+1]
+  res.lsv[j]=ts.lsv.p - ts[i+1]
+  j=j+1
+}
+cat(" Varianza dell'errore nel metodo Yule Walker:", sqrt(mean(res.arv^2)))
+cat(" Varianza dell'errore nel metodo dei minimi quadrati:", sqrt(mean(res.lsv^2)))
+plot(res.arv,type="b",pch=20,col="red", main = "Errore nella previsione (24 mesi)")
+lines(res.lsv,type="b",pch=20,col="blue")
+legend("topright",legend=c("Yule Walker", "Minimi quadrati"), col=c("red", "blue"), lty=1, cex=0.8)
+```
+
+Dai grafici precedenti osserviamo che non c'è paragone: Yule Walker si discosta troppo dalla serie originale e ha una varianza dell'errore decisamente più alta di quella dell'OLS. Certamente il miglior metodo tra i due è l'OLS.
+
+\section{Scelta finale del metodo e previsione}
+Scegliamo, infine, il miglior metodo tra quelli esaminati per poi procedere alla previsione del numero di unità di merci intermodali per il 2019. Il miglior metodo è il metodo dei minimi quadrati: anche se a discapito di Holt Winters additivo ha una varianza dell'errore leggermente più grande riesce a catturare molto meglio la parte finale della serie. Infatti, questo si può vedere sia dai grafici degli errori nelle previsioni (l'errore nei mesi finali di test è molto più piccolo per OLS rispetto a HW additivo), sia dai grafici delle previsioni (la serie delle previsioni cresce leggermente per OLS nei mesi finali, mentre per HW additivo continua a scendere).
+Calcoliamo l'incertezza per il metodo OLS: prima di farlo, analizziamo i residui per decidere se rigettare o meno l'ipotesi di gaussianità.
 
 
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+hist(ts.ls.r, 20, freq = F)
+lines(density(ts.ls.r),col="blue")
+lines(sort(ts.ls.r), dnorm(sort(ts.ls.r), mean(ts.ls.r), sd(ts.ls.r)), col = "red")
+qqnorm(ts.ls.r, pch = 20)
+qqline(ts.ls.r)
+shapiro.test(ts.ls.r)
+```
 
-
-
-
+La distribuzione empirica dei residui (in blu) si discosta tanto dalla distribuzione teorica (in rosso). Inoltre, il test di SW restituisce un p-value molto basso, dunque rigettiamo decisamente l'ipotesi gaussiana.
+Possiamo, quindi, utilizzare solo incertezze empiriche. Procediamo allora con la previsione.
 
 
 
