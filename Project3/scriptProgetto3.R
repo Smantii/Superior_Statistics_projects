@@ -55,8 +55,8 @@ layout(t(1:2))
 ts.hwa.r=resid(ts.hwa)
 ts.hwm.r=resid(ts.hwm)
 # proporzione di varianza non spiegata
-var(ts.hwa.r)/var(window(ts,1950))
-var(ts.hwm.r)/var(window(ts,1950))
+vra =var(ts.hwa.r)/var(window(ts,2000))
+vrm =var(ts.hwm.r)/var(window(ts,2000))
 # rappresentazione grafica rispetto al tempo
 plot(ts.hwa.r, type = "p", pch = 20)
 plot(ts.hwm.r, type = "p", pch = 20)
@@ -89,7 +89,7 @@ res.hwa=rep(0,24)
 res.hwm=rep(0,24)
 j=1
 for(i in (l-24):(l-1)){
-  ap_cv=ts(ts[1:i],frequency=12,start=c(1949,1))
+  ts_cv=ts(ts[1:i],frequency=12,start=c(2000,1))
   ts.hwa=HoltWinters(ts_cv,seasonal="additive")
   ts.hwm=HoltWinters(ts_cv,seasonal="multiplicative")
   ts.hwa.p=predict(ts.hwa,1)
