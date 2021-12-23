@@ -14,6 +14,20 @@ ts.dar=as.vector(window(ts.da$random,c(2000,7),c(2018,6)))
 ts.dmr=as.vector(window(ts.dm$random,c(2000,7),c(2018,6)))
 ts.hwa = HoltWinters(ts, seasonal = "a")
 ts.hwm = HoltWinters(ts, seasonal = "m")
+l=length(ts)
+res.hwa=rep(0,24)
+res.hwm=rep(0,24)
+j=1
+for(i in (l-24):(l-1)){
+  ts_cv=ts(ts[1:i],frequency=12,start=c(2000,1))
+  ts.hwa=HoltWinters(ts_cv,seasonal="additive")
+  ts.hwm=HoltWinters(ts_cv,seasonal="multiplicative")
+  ts.hwa.p=predict(ts.hwa,1)
+  ts.hwm.p=predict(ts.hwm,1)
+  res.hwa[j]=ts.hwa.p - ts[i+1]
+  res.hwm[j]=ts.hwm.p - ts[i+1]
+  j=j+1
+}
 ```
 
 \section{Introduzione}
@@ -110,5 +124,68 @@ Facciamo alcune osservazioni sui coefficienti.
 \begin{itemize}
 \item Il valore di alpha è molto grande per entrambi i metodi (circa 0.6) e quindi ambedue i metodi prediligono la componente innovativa: infatti questo si vede anche dai plot delle due serie generate, entrambe seguono molto la serie originale.
 \item Il valore di beta è molto basso per entrambi i metodi (circa 0.01): questo è molto ragionevole, data la forma che ha il trend, vista nella sezione Decomposizione ("oscilla poco").
-\item Il valore di gamma è molto vicino a 0.5 per entrambi i metodi (più per il metodo moltiplicativo): il massimo sarebbe avere gamma = 0.5 in modo da avere esattamente una via di mezzo tra componente innovativa e conservativa. \textcolor{red}{AGGIUSTARE QUESTE OSSERVAZIONI + CERCARE PARAMETRI MIGLIORI}
+\item Il valore di gamma è molto vicino a 0.5 per entrambi i metodi (più per il metodo moltiplicativo).
 \end{itemize}
+
+Guardando i plot e le osservazioni fatte poc'anzi entrambi i metodi (sia additivo che moltiplicativo) sembrano catturare già bene la struttura della serie storica in esame, soprattutto nella parte finale (che è la più interessante per la predizione). 
+Confrontiamo adesso i due metodi analizzandone in dettaglio i residui
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+ts.hwa.r=resid(ts.hwa)
+ts.hwm.r=resid(ts.hwm)
+vra =var(ts.hwa.r)/var(window(ts,2000))
+vrm =var(ts.hwm.r)/var(window(ts,2000))
+cat("Varianza non spiegata HW additivo:", vra)
+cat("Varianza non spiegata HW moltiplicativo:", vrm)
+plot(ts.hwa.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-a rispetto al tempo")
+plot(ts.hwm.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-m rispetto al tempo")
+
+```
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+plot(as.numeric(ts.hwa$fitted[,1]),as.numeric(ts.hwa.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
+plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
+```
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+acf(ts.hwa.r, main = "ACF residui HW-a")
+acf(ts.hwm.r, main = "ACF residui HW-m")
+```
+
+Entrambi i metodi hanno una struttura molto simile dei residui. Inoltre, guardando le funzioni di autocorrelazione osserviamo che entrambi i metodi riescono a catturare sufficientemente bene le informazioni su trend e stagionalità della serie, poichè per ogni lag (eccetto, ovviamente, lag = 0) la ACF non è significativamente diversa da 0.
+Ambedue presentano una proporzione di varianza non spiegata molto bassa (leggerissimamente meglio HW-a).
+
+Procediamo la nostra analisi dei due metodi di HW confrontando le loro capacità predittive: per farlo valutiamo l'errore nella predizione per 2 anni tramite un procedimento di autovalutazione.   
+
+```{r echo=FALSE, fig.show='hold', out.height="50%", out.width="50%", fig.align='center'}
+cat("Varianza dell'errore nel metodo additivo (in blu):", sqrt(mean(res.hwa^2)))
+cat("Varianza dell'errore nel metodo moltiplicativo (in verde):", sqrt(mean(res.hwm^2)))
+plot(res.hwa,type="b",pch=20,col="blue", main = "Errore nella predizione (24 mesi)")
+lines(res.hwm,type="b",pch=20,col="green3")
+```
+
+Possiamo fare alcune osservazioni.
+
+\begin{enumerate}
+\item Negli ultimi due anni i valori della serie sono dell'ordine di $10^6$ e per entrambi i metodi abbiamo una varianza dell'errore pari a circa $2 \times 10^4$, quindi entrambi i metodi hanno un'incertezza sulla previsione pari a circa il 2%.
+\item Tra i due preferiamo il metodo di HW additivo, sia perchè ha una varianza dell'errore leggermente più bassa sia perchè il metodo di HW moltiplicativo ha problemi di convergenza nel dodicesimo mese di validazione (come si vede facilmente dal plot).
+\end{enumerate}
+
+Concludiamo dalla nostra analisi che il metodo di Holt-Winters additivo si comporta meglio di quello moltiplicativo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
