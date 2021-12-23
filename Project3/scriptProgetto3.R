@@ -84,6 +84,16 @@ shapiro.test(ts.hwm.r)
 layout(1)
 
 #autovalidation
+train = window(ts, end = c(2016, 12))
+test = window(ts, start = c(2017,1), end = c(2018,12))
+tscv.hwa.p = predict(HoltWinters(train, seasonal = "a"), 24)
+tscv.hwm.p = predict(HoltWinters(train, seasonal = "m"), 24)
+ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"))
+sqrt(mean((tscv.hwa.p - test)^2))
+sqrt(mean((tscv.hwm.p - test)^2))
+
+
+
 l=length(ts)
 res.hwa=rep(0,24)
 res.hwm=rep(0,24)
@@ -102,6 +112,46 @@ sqrt(mean(res.hwa^2))
 sqrt(mean(res.hwm^2))
 plot(res.hwa,type="b",pch=20,col="blue")
 lines(res.hwm,type="b",pch=20,col="green3")
+
+#guardiamo la funzione di autocorrelazione parziale
+pacf(ts)
+
+#confrontiamo Yule-Walker e minimi quadrati
+ts.ar = ar(ts)
+ts.plot(ts, ts - ts.ar$resid, col = c("black", "red"), main = "Metodo di Yule Walker")
+ts.ls = ar(ts, method = "ols")
+ts.plot(ts, ts - ts.ls$resid, col = c("black", "blue"), main = "Metodo dei minimi quadrati")
+C = matrix(nrow = 2, ncol = 15)
+C[1,] = c(ts.ar$ar, NA, NA)
+C[2,] = c(ts.ls$ar)
+C = data.frame(C)
+rownames(C) = c("Yule Walker", "Minimi quadrati")
+
+#analisi dei residui
+ts.ar.r=na.omit(ts.ar$resid)
+ts.ls.r=na.omit(ts.ls$resid)
+# proporzione di varianza non spiegata
+vra =var(ts.ar.r)/var(window(ts,2000))
+vrm =var(ts.ls.r)/var(window(ts,2000))
+# rappresentazione grafica rispetto al tempo
+plot(ts.ar.r, type = "p", pch = 20)
+plot(ts.ls.r, type = "p", pch = 20)
+# autocorrelazione parziale
+pacf(ts.ar.r)
+pacf(ts.ls.r)
+
+
+#autovalidation
+train = window(ts, end = c(2016, 12))
+test = window(ts, start = c(2017,1), end = c(2018,12))
+tscv.ar.p = predict(ar(train), n.ahead = 24, se.fit = FALSE)
+tscv.ls.p = predict(ar(train, method = "ols"), n.ahead = 24, se.fit = FALSE)
+ts.plot(test, tscv.ar.p, tscv.ls.p, col = c("black", "red", "blue"))
+sqrt(mean((tscv.ar.p - test)^2))
+sqrt(mean((tscv.ls.p - test)^2))
+
+
+
 
 
 
