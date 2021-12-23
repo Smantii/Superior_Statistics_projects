@@ -28,6 +28,10 @@ for(i in (l-24):(l-1)){
   res.hwm[j]=ts.hwm.p - ts[i+1]
   j=j+1
 }
+ts.ar = ar(ts)
+ts.ls = ar(ts, method = "ols")
+ts.ar.r=na.omit(ts.ar$resid)
+ts.ls.r=na.omit(ts.ls$resid)
 ```
 
 \section{Introduzione}
@@ -157,9 +161,14 @@ Ambedue presentano una proporzione di varianza non spiegata molto bassa (leggeri
 
 Procediamo la nostra analisi dei due metodi di HW confrontando le loro capacità predittive: per farlo valutiamo l'errore nella predizione per 2 anni tramite un procedimento di autovalutazione.   
 
-```{r echo=FALSE, fig.show='hold', out.height="50%", out.width="50%", fig.align='center'}
+```{r echo=FALSE, fig.show='hold', out.height="40%", out.width="40%", fig.align='center'}
 cat("Varianza dell'errore nel metodo additivo (in blu):", sqrt(mean(res.hwa^2)))
 cat("Varianza dell'errore nel metodo moltiplicativo (in verde):", sqrt(mean(res.hwm^2)))
+train = window(ts, end = c(2016, 12))
+test = window(ts, start = c(2017,1), end = c(2018,12))
+tscv.hwa.p = predict(HoltWinters(train, seasonal = "a"), 24)
+tscv.hwm.p = predict(HoltWinters(train, seasonal = "m"), 24)
+ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"))
 plot(res.hwa,type="b",pch=20,col="blue", main = "Errore nella predizione (24 mesi)")
 lines(res.hwm,type="b",pch=20,col="green3")
 ```
@@ -172,6 +181,59 @@ Possiamo fare alcune osservazioni.
 \end{enumerate}
 
 Concludiamo dalla nostra analisi che il metodo di Holt-Winters additivo si comporta meglio di quello moltiplicativo.
+
+
+\section{Metodi autoregressivi}
+Procediamo la nostra analisi confrontando due metodi autoregressivi: il metodo di Yule-Walker ed il metodo autoregressivo dei minimi quadrati.
+Prima di farlo, guardiamo la funzione di autocorrelazione parziale della serie storica in esame.
+
+```{r echo=FALSE, fig.show='hold', out.height="50%", out.width="50%", fig.align='center'}
+pacf(ts, main = "PACF serie storica")
+```
+
+Dal plot della PACF visto poc'anzi ci aspettiamo che i metodi autoregressivi dipendano dai primi 13 istanti.
+Riportiamo adesso una rappresentazione grafica dei due metodi e una tabella con i valori dei coefficienti scelti.
+
+
+
+```{r echo=FALSE, fig.show='hold', out.height="40%", out.width="40%", fig.align='center'}
+ts.plot(ts, ts - ts.ar$resid, col = c("black", "red"), main = "Metodo di Yule Walker")
+ts.plot(ts, ts - ts.ls$resid, col = c("black", "blue"), main = "Metodo dei minimi quadrati")
+C = matrix(nrow = 2, ncol = 15)
+C[1,] = c(round(ts.ar$ar,2), NA, NA)
+C[2,] = c(round(ts.ls$ar, 2))
+C = data.frame(C)
+rownames(C) = c("YW", "OLS")
+knitr::kable(C, format="markdown")
+```
+
+Come ci aspettavamo, il metodo di YW utilizza 13 coefficienti, mentre inaspettatemente il metodo dei minimi quadrati ne utilizza 15. Osserviamo immediatamente dai plot che il metodo di YW sembra molto meno preciso (verso la fine della serie) rispetto al metodo dei minimi quadrati, che invece sembra catturare meglio la struttura della serie.
+
+Analizziamo anche in questo caso i residui per ambedue i metodi.
+
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+vra =var(ts.ar.r)/var(window(ts,2000))
+vrm =var(ts.ls.r)/var(window(ts,2000))
+cat("Varianza non spiegata YW:", vra)
+cat("Varianza non spiegata OLS:", vrm)
+plot(ts.ar.r, type = "p", pch = 20)
+plot(ts.ls.r, type = "p", pch = 20)
+```
+
+```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+pacf(ts.ar.r)
+pacf(ts.ls.r)
+```
+
+
+
+
+
+
+
+
+
 
 
 
