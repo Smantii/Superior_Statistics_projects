@@ -66,29 +66,14 @@ plot(as.numeric(ts.hwm$fitted[,1]), as.numeric(ts.hwm.r),type="p",pch=20)
 # autocorrelazione
 acf(ts.hwa.r)
 acf(ts.hwm.r)
-# densità empiriche
-hist(ts.hwa.r, 20, freq = F)
-lines(density(ts.hwa.r),col="blue")
-lines(sort(ts.hwa.r), dnorm(sort(ts.hwa.r), mean(ts.hwa.r), sd(ts.hwa.r)), col = "red")
-hist(ts.hwm.r, 20, freq = F)
-lines(density(ts.hwm.r),col="blue")
-lines(sort(ts.hwm.r), dnorm(sort(ts.hwm.r), mean(ts.hwm.r), sd(ts.hwm.r)), col = "red")
-# grafico quantile-quantile
-qqnorm(ts.hwa.r, pch = 20)
-qqline(ts.hwa.r)
-qqnorm(ts.hwm.r, pch = 20)
-qqline(ts.hwm.r)
-# test
-shapiro.test(ts.hwa.r)
-shapiro.test(ts.hwm.r)
-layout(1)
+
 
 #autovalidation
 train = window(ts, end = c(2016, 12))
 test = window(ts, start = c(2017,1), end = c(2018,12))
 tscv.hwa.p = predict(HoltWinters(train, seasonal = "a"), 24)
 tscv.hwm.p = predict(HoltWinters(train, seasonal = "m"), 24)
-ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"))
+ts.plot(test, tscv.hwa.p, tscv.hwm.p, col = c("black", "red", "blue"), main = "Previsione (24 mesi)")
 sqrt(mean((tscv.hwa.p - test)^2))
 sqrt(mean((tscv.hwm.p - test)^2))
 
@@ -151,10 +136,35 @@ sqrt(mean((tscv.ar.p - test)^2))
 sqrt(mean((tscv.ls.p - test)^2))
 
 
+l=length(ts)
+res.arv=rep(0,24)
+res.lsv=rep(0,24)
+j=1
+for(i in (l-24):(l-1)){
+  ts_cv=ts(ts[1:i],frequency=12,start=c(2000,1))
+  ts.arv=ar(ts_cv)
+  ts.lsv=ar(ts_cv, method = "ols")
+  ts.arv.p=predict(ts.arv,n.ahead = 1, se.fit = FALSE)
+  ts.lsv.p=predict(ts.lsv,n.ahead= 1, se.fit = FALSE)
+  res.arv[j]=ts.arv.p - ts[i+1]
+  res.lsv[j]=ts.lsv.p - ts[i+1]
+  j=j+1
+}
+sqrt(mean(res.arv^2))
+sqrt(mean(res.lsv^2))
+plot(res.arv,type="b",pch=20,col="blue")
+lines(res.lsv,type="b",pch=20,col="green3")
 
 
-
-
+# densità empiriche
+hist(ts.ls.r, 20, freq = F)
+lines(density(ts.ls.r),col="blue")
+lines(sort(ts.ls.r), dnorm(sort(ts.ls.r), mean(ts.ls.r), sd(ts.ls.r)), col = "red")
+# grafico quantile-quantile
+qqnorm(ts.ls.r, pch = 20)
+qqline(ts.ls.r)
+# test
+shapiro.test(ts.ls.r)
 
 
 
