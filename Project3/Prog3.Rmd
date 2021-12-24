@@ -40,9 +40,8 @@ ts2 = ts(N, deltat=1/12, start = c(2019,1))
 
 \section{Introduzione}
 La seguente analisi è rivolta alle aziende dedite alla costruzione di trasporti ferroviari per merci intermodali.
-Analizzeremo una serie storica (dettagli in fondo alla relazione) riguardante il traffico ferroviario di merci
-intermodali e il nostro obiettivo sarà predire il numero di unità nel 2019, in modo da costruire mezzi di
-trasporto che siano sufficientemente capienti ed efficienti.
+Analizzeremo una serie storica (reperibile \textcolor{blue}{\href{https://fred.stlouisfed.org/series/RAILFRTINTERMODAL}{qui}}) riguardante il traffico ferroviario di merci
+intermodali e il nostro obiettivo sarà predire il numero di unità nel 2019, in modo da testare la bontà e l'efficacia del metodo scelto.
 
 \section{Presentazione del problema}
 
@@ -61,6 +60,8 @@ ogni mese, dal Gennaio 2000 al Dicembre 2018.
 \item Guardando l’autocorrelazione osserviamo immediatamente la presenza di un trend e anche di stagionalità,
 data la presenza di "picchi" in ogni periodo.
 \end{enumerate}
+
+Nel seguito, confronteremo vari metodi per la decomposizione e l'analisi di serie storiche. Dopo aver trattato ognuno singolarmente, sceglieremo il migliore e ci concentreremo su quello per quanto riguarda la fase di predizione.
 
 \section{Decomposizione}
 
@@ -153,7 +154,7 @@ acf(ts.hwa.r, main = "ACF residui HW-a")
 ```{r echo=FALSE, fig.show='hold', out.height="30%", out.width="30%", fig.align='center'}
 ts.hwm.r=resid(ts.hwm)
 plot(ts.hwm.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-m rispetto al tempo")
-plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
+plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-m rispetto ai valori stimati")
 acf(ts.hwm.r, main = "ACF residui HW-m")
 ```
 
@@ -179,8 +180,8 @@ lines(res.hwm,type="b",pch=20,col="blue")
 Possiamo fare alcune osservazioni.
 
 \begin{enumerate}
-\item Negli ultimi due anni i valori della serie sono dell'ordine di $10^6$ e per entrambi i metodi abbiamo una varianza dell'errore pari a circa $2 \times 10^4$, quindi entrambi i metodi hanno un'incertezza sulla previsione pari a circa il 2%.
-\item Tra i due preferiamo il metodo di HW additivo, sia perchè ha una varianza dell'errore leggermente più bassa sia perchè il metodo di HW moltiplicativo ha problemi di convergenza nel dodicesimo mese di validazione (come si vede facilmente dal plot).
+\item Negli ultimi due anni i valori della serie sono dell'ordine di $10^6$ e per entrambi i metodi abbiamo una varianza dell'errore pari a circa $2 \times 10^4$, quindi entrambi i metodi hanno un'incertezza sulla previsione pari a circa il $2\%$.
+\item Tra i due preferiamo il metodo di HW additivo, sia perchè ha una varianza dell'errore leggermente più bassa sia perchè il metodo di HW moltiplicativo ha problemi di convergenza nel dodicesimo mese di validazione (come si vede facilmente dal plot degli errori nella previsione).
 \end{enumerate}
 
 Concludiamo dalla nostra analisi che il metodo di Holt-Winters additivo si comporta meglio di quello moltiplicativo.
@@ -210,7 +211,7 @@ rownames(C) = c("YW", "OLS")
 knitr::kable(C, format="markdown")
 ```
 
-Come ci aspettavamo, il metodo di YW utilizza 13 coefficienti, mentre inaspettatemente il metodo dei minimi quadrati ne utilizza 15. Osserviamo immediatamente dai plot che il metodo di YW sembra molto meno preciso (verso la fine della serie) rispetto al metodo dei minimi quadrati, che invece sembra catturare meglio la struttura della serie.
+Come ci aspettavamo, il metodo di YW utilizza 13 coefficienti, mentre inaspettatemente il metodo dei minimi quadrati ne utilizza 15. Osserviamo immediatamente dai plot che il metodo di YW sembra molto meno preciso (verso la fine della serie) rispetto al metodo dei minimi quadrati, che invece sembra catturare meglio la struttura della serie (soprattutto verso la fine).
 
 Analizziamo anche in questo caso i residui per ambedue i metodi.
 
@@ -265,7 +266,7 @@ legend("topright",legend=c("Yule Walker", "Minimi quadrati"), col=c("red", "blue
 Dai grafici precedenti osserviamo che non c'è paragone: Yule Walker si discosta troppo dalla serie originale e ha una varianza dell'errore decisamente più alta di quella dell'OLS. Certamente il miglior metodo tra i due è l'OLS.
 
 \section{Scelta finale del metodo e previsione}
-Scegliamo, infine, il miglior metodo tra quelli esaminati per poi procedere alla previsione del numero di unità di merci intermodali per il 2019. Il miglior metodo è il metodo dei minimi quadrati: anche se a discapito di Holt Winters additivo ha una varianza dell'errore leggermente più grande riesce a catturare molto meglio la parte finale della serie. Infatti, questo si può vedere sia dai grafici degli errori nelle previsioni (l'errore nei mesi finali di test è molto più piccolo per OLS rispetto a HW additivo), sia dai grafici delle previsioni (la serie delle previsioni cresce leggermente per OLS nei mesi finali, mentre per HW additivo continua a scendere).
+Scegliamo, infine, il miglior metodo tra quelli esaminati per poi procedere alla previsione del numero di unità di merci intermodali per il 2019. Il miglior metodo è il metodo dei minimi quadrati: anche se a discapito di Holt Winters additivo ha una varianza dell'errore leggermente più grande, riesce a catturare molto meglio la parte finale della serie. Infatti, questo si può vedere sia dai grafici degli errori nelle previsioni (l'errore nei mesi finali di test è molto più piccolo per OLS rispetto a HW additivo), sia dai grafici delle previsioni (la serie delle previsioni cresce leggermente per OLS nei mesi finali, mentre per HW additivo continua a scendere).
 Calcoliamo l'incertezza per il metodo OLS: prima di farlo, analizziamo i residui per decidere se rigettare o meno l'ipotesi di gaussianità.
 
 
@@ -278,17 +279,17 @@ qqline(ts.ls.r)
 shapiro.test(ts.ls.r)
 ```
 
-La distribuzione empirica dei residui (in blu) si discosta tanto dalla distribuzione teorica (in rosso). Inoltre, il test di SW restituisce un p-value molto basso, dunque rigettiamo decisamente l'ipotesi gaussiana.
+La distribuzione empirica dei residui (in blu) si discosta tanto dalla distribuzione teorica (in rosso). Inoltre, il test di SW restituisce un p-value molto basso, dunque rigettiamo decisamente l'ipotesi di gaussianità.
 Possiamo, quindi, utilizzare solo incertezze empiriche. Procediamo allora con la previsione del numero di unità nel 2019. Fortunatamente, dato che siamo nel 2021, possiamo confrontare la nostra previsione con i veri risultati.
 
 ```{r echo = FALSE, out.height="60%", out.width="60%", fig.align='center'}
-ts.2015 = window(ts, start = c(2015,1))
-ts.ls.2015 = window(ts - ts.ls$resid, start = c(2015,1))
+ts.2015 = window(ts, start = c(2017,1))
+ts.ls.2015 = window(ts - ts.ls$resid, start = c(2017,1))
 ts.ls.p = predict(ts.ls, n.ahead = 12, se.fit = FALSE)
 ts.plot(ts.2015, ts.ls.2015, ts2, ts.ls.p, col = c("black","cyan","blue","red"))
 lines(ts.ls.p+quantile(ts.ls.r,0.05),col="green3")
 lines(ts.ls.p+quantile(ts.ls.r,0.95),col="green3")
-legend("topleft",legend=c("Serie storica", "Minimi quadrati", "Serie nel 2019", "Incertezza"), col=c("black","cyan","blue","red"), lty=1, cex=0.4)
+legend("topleft",legend=c("Serie storica", "Minimi quadrati", "Serie nel 2019", "Previsione", "Incertezza"), col=c("black","cyan","blue","red", "green3"), lty=1, cex=0.4)
 ```
 
 Il risultato della previsione è in linea con la stima dell'errore fatta prima, inoltre l'andamento della previsione è molto simile all'andamento effettivo della serie.

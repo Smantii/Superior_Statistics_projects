@@ -6,7 +6,7 @@ ts = ts(A, deltat=1/12, start = c(2000,1))
 plot(ts, main = "Unità merci intermodali per trasporti ferroviari")
 
 #guardo l'autocorrelazione
-acf(ts, 30)
+acf(ts, 48, main = "ACF serie storica")
 
 #provo a decomporre la serie additivamente e moltiplicativamente
 ts.da = decompose(ts, type = "a")
@@ -16,14 +16,11 @@ plot(ts.dm)
 
 #diamo un'occhiata all'autocorrelazione e al plot dei residui di entrambe le decomposizioni
 ts.dar=as.vector(window(ts.da$random,c(2000,7),c(2018,6)))
-plot(ts.dar, pch=20)
-acf(ts.dar)
+plot(ts.dar,pch = 20, main = "Residui della decomposizione additiva")
+acf(ts.dar, main = "ACF residui decomposizione additiva")
 ts.dmr=as.vector(window(ts.dm$random,c(2000,7),c(2018,6)))
-ts.dmrl = log(ts.dmr)
-plot(ts.dmrl, pch=20)
-acf(ts.dmrl)
-var(ts.dar)/var(window(ts,c(2000,7),c(2018,6)))
-var(ts.dmrl)/var(window(log(ts),c(2000,7),c(2018,6)))
+plot(ts.dmr,pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
+acf(ts.dmr, main = "ACF residui decomposizione moltiplicativa")
 
 
 #proviamo ad utilizzare stagionalità variabile
@@ -35,7 +32,9 @@ plot(ts.stl$time.series[,3], main = "Serie dei residui")
 #proviamo ad utilizzare e confrontare HW additivo e moltiplicativo
 ts.hwa = HoltWinters(ts, seasonal = "a")
 ts.hwm = HoltWinters(ts, seasonal = "m")
-ts.plot(ts,ts.hwa$fitted[,1],ts.hwm$fitted[,1],col=c("black","blue","red"))
+ts.plot(ts,ts.hwa$fitted[,1],col=c("black","red"), main = "Holt-Winters additivo")
+ts.plot(ts,ts.hwm$fitted[,1],col=c("black","red"), main = "Holt-Winters moltiplicativo")
+
 
 #guardiamo i coefficienti scelti da HW di default
 C = matrix(nrow = 4, ncol = 3)
@@ -50,22 +49,22 @@ C[4,2] = ts.hwa$gamma
 C[4,3] = ts.hwm$gamma
 
 
-layout(t(1:2))
-# estrazione dei residui
+#studiamo i residui
 ts.hwa.r=resid(ts.hwa)
 ts.hwm.r=resid(ts.hwm)
 # proporzione di varianza non spiegata
 vra =var(ts.hwa.r)/var(window(ts,2000))
 vrm =var(ts.hwm.r)/var(window(ts,2000))
+cat("Varianza non spiegata HW additivo:", vra)
+cat("Varianza non spiegata HW moltiplicativo:", vrm)
 # rappresentazione grafica rispetto al tempo
-plot(ts.hwa.r, type = "p", pch = 20)
-plot(ts.hwm.r, type = "p", pch = 20)
+plot(ts.hwa.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-a rispetto al tempo")
+plot(ts.hwm.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-m rispetto al tempo")
 # rappresentazione grafica rispetto ai valori stimati
-plot(as.numeric(ts.hwa$fitted[,1]), as.numeric(ts.hwa.r),type="p",pch=20)
-plot(as.numeric(ts.hwm$fitted[,1]), as.numeric(ts.hwm.r),type="p",pch=20)
-# autocorrelazione
-acf(ts.hwa.r)
-acf(ts.hwm.r)
+plot(as.numeric(ts.hwa$fitted[,1]),as.numeric(ts.hwa.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
+plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-m rispetto ai valori stimati")# autocorrelazione
+acf(ts.hwa.r, main = "ACF residui HW-a")
+acf(ts.hwm.r, main = "ACF residui HW-m")
 
 
 #autovalidation
@@ -99,18 +98,18 @@ plot(res.hwa,type="b",pch=20,col="blue")
 lines(res.hwm,type="b",pch=20,col="green3")
 
 #guardiamo la funzione di autocorrelazione parziale
-pacf(ts)
+pacf(ts, main = "PACF serie storica")
 
 #confrontiamo Yule-Walker e minimi quadrati
 ts.ar = ar(ts)
-ts.plot(ts, ts - ts.ar$resid, col = c("black", "red"), main = "Metodo di Yule Walker")
 ts.ls = ar(ts, method = "ols")
+ts.plot(ts, ts - ts.ar$resid, col = c("black", "red"), main = "Metodo di Yule Walker")
 ts.plot(ts, ts - ts.ls$resid, col = c("black", "blue"), main = "Metodo dei minimi quadrati")
 C = matrix(nrow = 2, ncol = 15)
 C[1,] = c(ts.ar$ar, NA, NA)
 C[2,] = c(ts.ls$ar)
 C = data.frame(C)
-rownames(C) = c("Yule Walker", "Minimi quadrati")
+rownames(C) = c("YW", "OLS")
 
 #analisi dei residui
 ts.ar.r=na.omit(ts.ar$resid)
@@ -131,10 +130,8 @@ train = window(ts, end = c(2016, 12))
 test = window(ts, start = c(2017,1), end = c(2018,12))
 tscv.ar.p = predict(ar(train), n.ahead = 24, se.fit = FALSE)
 tscv.ls.p = predict(ar(train, method = "ols"), n.ahead = 24, se.fit = FALSE)
-ts.plot(test, tscv.ar.p, tscv.ls.p, col = c("black", "red", "blue"))
-sqrt(mean((tscv.ar.p - test)^2))
-sqrt(mean((tscv.ls.p - test)^2))
-
+ts.plot(test, tscv.ar.p, tscv.ls.p, col = c("black", "red", "blue"), main = "Previsione (24 mesi)")
+legend("topleft",legend=c("Yule Walker", "Minimi quadrati"), col=c("red", "blue"), lty=1, cex=0.8)
 
 l=length(ts)
 res.arv=rep(0,24)
@@ -150,20 +147,19 @@ for(i in (l-24):(l-1)){
   res.lsv[j]=ts.lsv.p - ts[i+1]
   j=j+1
 }
-sqrt(mean(res.arv^2))
-sqrt(mean(res.lsv^2))
-plot(res.arv,type="b",pch=20,col="blue")
-lines(res.lsv,type="b",pch=20,col="green3")
+cat(" Varianza dell'errore nel metodo Yule Walker:", sqrt(mean(res.arv^2)))
+cat(" Varianza dell'errore nel metodo dei minimi quadrati:", sqrt(mean(res.lsv^2)))
+plot(res.arv,type="b",pch=20,col="red", main = "Errore nella previsione (24 mesi)")
+lines(res.lsv,type="b",pch=20,col="blue")
+legend("topright",legend=c("Yule Walker", "Minimi quadrati"), col=c("red", "blue"), lty=1, cex=0.8)
 
 
-# densità empiriche
+#vediamo se per OLS si ha l'ipotesi di gaussianità
 hist(ts.ls.r, 20, freq = F)
 lines(density(ts.ls.r),col="blue")
 lines(sort(ts.ls.r), dnorm(sort(ts.ls.r), mean(ts.ls.r), sd(ts.ls.r)), col = "red")
-# grafico quantile-quantile
 qqnorm(ts.ls.r, pch = 20)
 qqline(ts.ls.r)
-# test
 shapiro.test(ts.ls.r)
 
 #serie più lunga fino al 2019
@@ -172,10 +168,12 @@ ts2 = ts(N, deltat=1/12, start = c(2019,1))
 
 
 #predizione
-ts.2015 = window(ts, start = c(2015,1))
-ts.ls.2015 = ar(ts.2015, method = "ols")
-ts.ls.p = predict(ts.ls.2015, n.ahead = 12, se.fit = FALSE)
-ts.plot(ts.2015, ts.ls.2015 - ts.ls.2015$resid, ts2, ts.ls.p, col = c("black","cyan","blue","red"))
+ts.2015 = window(ts, start = c(2017,1))
+ts.ls.2015 = window(ts - ts.ls$resid, start = c(2017,1))
+ts.ls.p = predict(ts.ls, n.ahead = 12, se.fit = FALSE)
+ts.plot(ts.2015, ts.ls.2015, ts2, ts.ls.p, col = c("black","cyan","blue","red"))
 lines(ts.ls.p+quantile(ts.ls.r,0.05),col="green3")
 lines(ts.ls.p+quantile(ts.ls.r,0.95),col="green3")
-legend("topleft",legend=c("Serie storica", "Minimi quadrati"), col=c("black","cyan","blue","red"), lty=1, cex=0.8)
+legend("topleft",legend=c("Serie storica", "Minimi quadrati", "Serie nel 2019", "Previsione", "Incertezza"), col=c("black","cyan","blue","red", "green3"), lty=1, cex=0.4)
+
+
