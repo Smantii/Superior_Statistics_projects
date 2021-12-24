@@ -166,5 +166,16 @@ qqline(ts.ls.r)
 # test
 shapiro.test(ts.ls.r)
 
+#serie più lunga fino al 2019
+N = read.csv("Serie2.csv", row.names = 1, stringsAsFactors = F)
+ts2 = ts(N, deltat=1/12, start = c(2019,1))
 
 
+#predizione
+ts.2015 = window(ts, start = c(2015,1))
+ts.ls.2015 = ar(ts.2015, method = "ols")
+ts.ls.p = predict(ts.ls.2015, n.ahead = 12, se.fit = FALSE)
+ts.plot(ts.2015, ts.ls.2015 - ts.ls.2015$resid, ts2, ts.ls.p, col = c("black","cyan","blue","red"))
+lines(ts.ls.p+quantile(ts.ls.r,0.05),col="green3")
+lines(ts.ls.p+quantile(ts.ls.r,0.95),col="green3")
+legend("topleft",legend=c("Serie storica", "Minimi quadrati"), col=c("black","cyan","blue","red"), lty=1, cex=0.8)
