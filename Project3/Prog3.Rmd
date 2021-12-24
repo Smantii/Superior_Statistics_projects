@@ -34,6 +34,8 @@ ts.ar = ar(ts)
 ts.ls = ar(ts, method = "ols")
 ts.ar.r=na.omit(ts.ar$resid)
 ts.ls.r=na.omit(ts.ls$resid)
+N = read.csv("Serie2.csv", row.names = 1, stringsAsFactors = F)
+ts2 = ts(N, deltat=1/12, start = c(2019,1))
 ```
 
 \section{Introduzione}
@@ -136,7 +138,7 @@ Facciamo alcune osservazioni sui coefficienti.
 Guardando i plot e le osservazioni fatte poc'anzi entrambi i metodi (sia additivo che moltiplicativo) sembrano catturare già bene la struttura della serie storica in esame, soprattutto nella parte finale (che è la più interessante per la predizione). 
 Confrontiamo adesso i due metodi analizzandone in dettaglio i residui
 
-```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
+```{r echo=FALSE, fig.show='hold', out.height="30%", out.width="30%", fig.align='center'}
 ts.hwa.r=resid(ts.hwa)
 ts.hwm.r=resid(ts.hwm)
 vra =var(ts.hwa.r)/var(window(ts,2000))
@@ -144,17 +146,14 @@ vrm =var(ts.hwm.r)/var(window(ts,2000))
 cat("Varianza non spiegata HW additivo:", vra)
 cat("Varianza non spiegata HW moltiplicativo:", vrm)
 plot(ts.hwa.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-a rispetto al tempo")
-plot(ts.hwm.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-m rispetto al tempo")
-
-```
-
-```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
 plot(as.numeric(ts.hwa$fitted[,1]),as.numeric(ts.hwa.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
-plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
+acf(ts.hwa.r, main = "ACF residui HW-a")
 ```
 
-```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
-acf(ts.hwa.r, main = "ACF residui HW-a")
+```{r echo=FALSE, fig.show='hold', out.height="30%", out.width="30%", fig.align='center'}
+ts.hwm.r=resid(ts.hwm)
+plot(ts.hwm.r, type = "p", pch = 20, main = "Rappresentazione grafica residui HW-m rispetto al tempo")
+plot(as.numeric(ts.hwm$fitted[,1]),as.numeric(ts.hwm.r),type="p",pch=20, main = "Rappresentazione grafica residui HW-a rispetto ai valori stimati")
 acf(ts.hwm.r, main = "ACF residui HW-m")
 ```
 
@@ -280,12 +279,22 @@ shapiro.test(ts.ls.r)
 ```
 
 La distribuzione empirica dei residui (in blu) si discosta tanto dalla distribuzione teorica (in rosso). Inoltre, il test di SW restituisce un p-value molto basso, dunque rigettiamo decisamente l'ipotesi gaussiana.
-Possiamo, quindi, utilizzare solo incertezze empiriche. Procediamo allora con la previsione.
+Possiamo, quindi, utilizzare solo incertezze empiriche. Procediamo allora con la previsione del numero di unità nel 2019. Fortunatamente, dato che siamo nel 2021, possiamo confrontare la nostra previsione con i veri risultati.
 
+```{r echo = FALSE, out.height="60%", out.width="60%", fig.align='center'}
+ts.2015 = window(ts, start = c(2015,1))
+ts.ls.2015 = window(ts - ts.ls$resid, start = c(2015,1))
+ts.ls.p = predict(ts.ls, n.ahead = 12, se.fit = FALSE)
+ts.plot(ts.2015, ts.ls.2015, ts2, ts.ls.p, col = c("black","cyan","blue","red"))
+lines(ts.ls.p+quantile(ts.ls.r,0.05),col="green3")
+lines(ts.ls.p+quantile(ts.ls.r,0.95),col="green3")
+legend("topleft",legend=c("Serie storica", "Minimi quadrati", "Serie nel 2019", "Incertezza"), col=c("black","cyan","blue","red"), lty=1, cex=0.4)
+```
 
+Il risultato della previsione è in linea con la stima dell'errore fatta prima, inoltre l'andamento della previsione è molto simile all'andamento effettivo della serie.
 
-
-
+\section{Conclusione}
+Per concludere, abbiamo confrontato diversi metodi di analisi di serie storiche per studiare la serie storica riguardante il numero di unità di merci intermodali per trasporti ferroviari. Fra tutti, il migliore è risultato il metodo autoregressivo dei minimi quadrati, il quale si è rivelato decisamente notevole in fase di previsione.
 
 
 
