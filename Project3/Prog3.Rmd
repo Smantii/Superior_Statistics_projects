@@ -75,23 +75,19 @@ plot(ts.da)
 plot(ts.dm)
 ```
 
-Osserviamo che il metodo di decomposizione additivo sembra catturare meglio la componente stagionale, in quanto le ordinate variano in $[10^{-5}, 10^5]$. Anche i residui però variano nello stesso intervallo, proviamo a
-guardare la loro autocorrelazione e il loro plot per ambedue i metodi.
+Osserviamo che il metodo di decomposizione additivo sembra catturare meglio la componente stagionale, in quanto le ordinate variano in $[10^{-5}, 10^5]$. Tuttavia anche i residui variano nello stesso intervallo: proviamo allora a guardare l'autocorrelazione e il plot dei residui per ambedue i metodi.
 
 ```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
 acf(ts.dar, main = "ACF residui decomposizione additiva")
-acf(ts.dmr, main = "ACF residui decomposizione moltiplicativa")
+acf(log(ts.dmr), main = "ACF residui decomposizione moltiplicativa")
 ```
 
 ```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
 plot(ts.dar,pch = 20, main = "Residui della decomposizione additiva")
-plot(ts.dmr,pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
+plot(log(ts.dmr),pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
 ```
 
-Effettivamente i residui hanno un ordine di grandezza pari a $10^4$, solo pochi sono dell’ordine di $10^5$. Quindi
-sia nella decomposizione additiva che in quella moltiplicativa non riusciamo a catturare sufficientemente
-bene la stagionalità, in quanto in ambedue i casi gli ordini di grandezza sono comparabili (in questo caso
-addirittura gli stessi).
+Effettivamente i residui della decomposizione additiva hanno un ordine di grandezza pari a $10^4$, solo pochi sono dell’ordine di $10^5$. Quindi sia nella decomposizione additiva che in quella moltiplicativa non riusciamo a catturare sufficientemente bene la stagionalità, in quanto in ambedue i casi gli ordini di grandezza di stagionalità e residui sono comparabili (in questo caso addirittura gli stessi).
 
 
 Dato che entrambe le decomposizioni a stagionalità fissa non restituiscono risultati convincenti, proviamo a
@@ -108,7 +104,7 @@ convincente, nel senso che non riusciamo a catturare sufficientemente bene la st
 la stagionalità sia trascurabile visto anche l’aspetto della funzione di autocorrelazione della serie.
 
 \section{Holt Winters}
-Consideriamo adesso il metodo di Holt-Winters e confrontiamo il metodo di HW additivo e il metodo moltiplicativo, per capire quale dei due funziona meglio per la serie storica in esame. Riportiamo in seguito una rappresentazione grafica dei due metodi con coefficienti di default (i.e. i coefficienti ottimali ottenuti minimizzando la varianza dei residui) e i valori di tali coefficienti.
+Consideriamo adesso il metodo di Holt-Winters e confrontiamo il metodo di HW additivo e il metodo moltiplicativo, per capire quale dei due funziona meglio per la serie storica in esame. Riportiamo in seguito una rappresentazione grafica dei due metodi con coefficienti di default (i.e. i coefficienti ottimali ottenuti minimizzando la somma dei quadrati dei residui) e i valori di tali coefficienti.
 
 ```{r echo=FALSE, fig.show='hold', out.height="45%", out.width="45%", fig.align='center'}
 ts.plot(ts,ts.hwa$fitted[,1],col=c("black","red"), main = "Holt-Winters additivo")
@@ -136,7 +132,7 @@ Facciamo alcune osservazioni sui coefficienti.
 \item Il valore di gamma è molto vicino a 0.5 per entrambi i metodi (più per il metodo moltiplicativo).
 \end{itemize}
 
-Guardando i plot e le osservazioni fatte poc'anzi entrambi i metodi (sia additivo che moltiplicativo) sembrano catturare già bene la struttura della serie storica in esame, soprattutto nella parte finale (che è la più interessante per la predizione). 
+Guardando i plot e le osservazioni fatte poc'anzi entrambi i metodi (sia additivo che moltiplicativo) sembrano catturare già bene la struttura della serie storica in esame, soprattutto nella parte finale (che è la più interessante per la predizione). Dunque, non riteniamo opportuno ricercare altri valori dei coefficienti: ci concentreremo sullo studio dei due metodi con coefficienti "di default".
 Confrontiamo adesso i due metodi analizzandone in dettaglio i residui
 
 ```{r echo=FALSE, fig.show='hold', out.height="30%", out.width="30%", fig.align='center'}
@@ -226,11 +222,11 @@ plot(ts.ls.r, type = "p", pch = 20, main = "Residui OLS")
 ```
 
 ```{r echo=FALSE, fig.show='hold', out.height="35%", out.width="35%", fig.align='center'}
-pacf(ts.ar.r, main = "PACF residui YW")
-pacf(ts.ls.r, main = "PACF residui OLS")
+acf(ts.ar.r, main = "ACF residui YW")
+acf(ts.ls.r, main = "ACF residui OLS")
 ```
 
-La struttura dei residui per entrambi i metodi sembra molto simile a quella dei metodi HW, anche se la PACF del metodo dei minimi quadrati presenta un picco in corrispondenza del periodo.
+La struttura dei residui per entrambi i metodi sembra molto simile a quella dei metodi HW, anche se la ACF del metodo dei minimi quadrati presenta un picco in corrispondenza del periodo.
 
 Confrontiamo adesso le due capacità predittive tramite un autovalidazione.
 
@@ -280,9 +276,11 @@ shapiro.test(ts.ls.r)
 ```
 
 La distribuzione empirica dei residui (in blu) si discosta tanto dalla distribuzione teorica (in rosso). Inoltre, il test di SW restituisce un p-value molto basso, dunque rigettiamo decisamente l'ipotesi di gaussianità.
-Possiamo, quindi, utilizzare solo incertezze empiriche. Procediamo allora con la previsione del numero di unità nel 2019. Fortunatamente, dato che siamo nel 2021, possiamo confrontare la nostra previsione con i veri risultati.
+Possiamo, quindi, utilizzare solo incertezze empiriche.
 
-```{r echo = FALSE, out.height="60%", out.width="60%", fig.align='center'}
+Procediamo allora con la previsione del numero di unità nel 2019. Fortunatamente, dato che siamo nel 2021, possiamo confrontare la nostra previsione con i veri risultati, per verificare l'efficacia o meno del metodo scelto.
+
+```{r echo = FALSE, out.height="70%", out.width="70%", fig.align='center'}
 ts.2015 = window(ts, start = c(2017,1))
 ts.ls.2015 = window(ts - ts.ls$resid, start = c(2017,1))
 ts.ls.p = predict(ts.ls, n.ahead = 12, se.fit = FALSE)

@@ -19,8 +19,8 @@ ts.dar=as.vector(window(ts.da$random,c(2000,7),c(2018,6)))
 plot(ts.dar,pch = 20, main = "Residui della decomposizione additiva")
 acf(ts.dar, main = "ACF residui decomposizione additiva")
 ts.dmr=as.vector(window(ts.dm$random,c(2000,7),c(2018,6)))
-plot(ts.dmr,pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
-acf(ts.dmr, main = "ACF residui decomposizione moltiplicativa")
+plot(log(ts.dmr),pch = 20, main = "Logaritmo dei residui della decomposizione moltiplicativa")
+acf(log(ts.dmr), main = "ACF residui decomposizione moltiplicativa")
 
 
 #proviamo ad utilizzare stagionalità variabile
@@ -121,9 +121,8 @@ vrm =var(ts.ls.r)/var(window(ts,2000))
 plot(ts.ar.r, type = "p", pch = 20)
 plot(ts.ls.r, type = "p", pch = 20)
 # autocorrelazione parziale
-pacf(ts.ar.r)
-pacf(ts.ls.r)
-
+acf(ts.ar.r, main = "ACF residui YW")
+acf(ts.ls.r, main = "ACF residui OLS")
 
 #autovalidation
 train = window(ts, end = c(2016, 12))
